@@ -7,3 +7,8 @@ Today I bring you
 
 So uh idk launch it if u want or not I guess
 Imma go play Touhou 6 (which you should totally try too!!!)
+
+The first file is a connect 4
+Have fun I guess
+
+second file is 
