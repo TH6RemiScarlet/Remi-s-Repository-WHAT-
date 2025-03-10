@@ -1,0 +1,280 @@
+int
+
+import flet as ft  #flet
+import os  # Esto es para manejar archivos del sistema
+import csv  # Y esto para trabajar con archivos .csv
+
+ROWS, COLS = 6, 7  # tamaño del tablero (6*7)
+STATS_FILE = "Soy_Moralmente_Superior.csv"  #Este es el nombre del archivo donde se guardan las estadísticas de juego
+
+# Función para crear un tablero vacío, representado por una lista de listas
+def Hacer_Tablero():
+    # Crea un tablero de 6x7, cada casilla está inicializada con 0 (vacía)
+    # O en otras palabras, cada casilla es representada por 0 (no pertenece a ningún jugador), y por ende vacía.
+    return [[0 for _ in range(COLS)] for _ in range(ROWS)]
+
+
+def soltar_ficha(Tablero, col, player):
+    # Recorre las filas desde abajo hacia arriba para encontrar la primera casilla vacía en la columna
+    for row in reversed(range(ROWS)): #Está buscando en reversa ya ue de lo contrario, al soltar las fichas estas caen en el techo
+        #En vez del suelo, cosa ue no ueremos.
+        if Tablero[row][col] == 0:  # Si la casilla está vacía...
+            Tablero[row][col] = player  # Coloca la ficha del jugador en esa casilla
+            return row  # Devuelve la fila en la que se colocó la ficha
+    return None  # Si la columna está llena, devuelve None indicando que no se pudo colocar la ficha
+
+# Esto es para cargar las estadísticas de las partidas desde el archivo .csv
+def load_stats():
+    if os.path.exists(STATS_FILE):  # Si el archivo de estadísticas existe...
+        with open(STATS_FILE, mode='r', newline='') as file:  # Abre el archivo en modo lectura
+            reader = csv.reader(file)  # Crea un lector CSV
+            # Crea un diccionario de estadísticas donde las claves son los nombres de los jugadores
+            # y los valores son un diccionario con las estadísticas de cada uno
+            stats = {row[0]: {'wins': float(row[1]), 'losses': float(row[2]), 'draws': float(row[3])} for row in reader}
+    else:
+        # Si no existe el archivo, coloca todas las estadísticas predeterminadas
+        stats = {'Jugador 1 (rojo)': {'ganó': 0, 'perdió (terrible bobo)': 0, 'empató (CÓMO????)': 0},
+                 'Jugador 2 (amarillas)': {'ganó': 0, 'perdió (terrible bobo)': 0, 'empató (CÓMO????)': 0}}
+    return stats  # Devuelve el diccionario de estadísticas
+
+# Acá se guardan los stats en el archivo .csv
+def save_stats(stats):
+    with open(STATS_FILE, mode='w', newline='') as file:  # Abre el archivo en modo escritura
+        writer = csv.writer(file)  # Crea un escritor CSV
+        # Escribe las estadísticas de cada jugador en el archivo CSV
+        for player, data in stats.items():
+            writer.writerow([player, data['wins'], data['losses'], data['draws']])
+
+# Función para actualizar las estadísticas de los jugadores (cuando un jugador gana o el juego termina en empate)
+def update_stats(page, winner=None):
+    stats = page.stats  # Accede a las estadísticas almacenadas en el objeto de la página
+    
+    # Si hay un ganador, actualiza las estadísticas de los jugadores
+    #Recuerden, player1 = rojo y player2 = amarillo
+    if winner == 'player1':
+        stats['player1']['wins'] += 0.5  # +1 victoria para jugador 1
+        stats['player2']['losses'] += 0.5  # +1 derrota (jijijija) para jugador 2
+    elif winner == 'player2':
+        stats['player2']['wins'] += 0.5  # +1 victoria para jugador 2
+        stats['player1']['losses'] += 0.5  # +1 derrota (ay) para jugador 1
+    else:  # Si el resultado es un empate
+        stats['player1']['draws'] += 1  # +1 empate para jugador 1
+        stats['player2']['draws'] += 1  # +1 empate para jugador 2
+    
+    save_stats(stats)  # Guarda las estadísticas actualizadas en el archivo CSV
+
+# Función para comprobar si un jugador ha ganado
+def ganaste(Tablero, player, page):
+#Ahora, resumamos todo este código.
+#Básicamente, esta definición comprueba si el movimiento de los jugadores es un "Movimiento ganador".
+#Cómo se define si hay un movimiento ganador?
+#El código mira la ficha la cual lanzaste. Luego revisa 3 espacios en las direcciones horizontales, verticales y diagonales.
+#Si aparte de la ficha la cual colocaste, se detectan 3 fichas en la misma dirección, entonces el movimiento es ganador. Voy a analizar
+#Uno de estos códigos de abajo para mostrar el proceso.
+
+
+    #V. Filas
+    #Primero, este código revisa todas las filas, de arriba a abajo. Luego, por cada fila, revisa desde la primera hasta la cuarta columna.
+    #Esto lo hace para verificar que haya suficiente espacio para que sea siquiera posible que haya 4 fichas en la misma dirección horizontalmente.
+    #Luego, se comprueba si las fichas en los 3-1 espacios consecutivos pertenecen a el mismo jugador
+    #si lo son, el movimiento es ganador
+    #De lo contrario, es falso y la partida sigue.
+    for row in range(ROWS):
+        for col in range(COLS - 3):
+            if Tablero[row][col] == Tablero[row][col+1] == Tablero[row][col+2] == Tablero[row][col+3] == player:
+                update_stats(page, winner='player1' if player == 1 else 'player2')  # Actualiza las estadísticas cuando hay un ganador
+                return True  # DA True si el jugador ganó
+    
+    # V. Columnas
+    #El código revisa todas las columnas, de izquierda a derecha. Luego, por cada columna, revisa desde la primera hasta la cuarta fila.
+    #Va hasta la cuarta para verificar que haya suficiente espacio para que sea siquiera posible que haya 4 fichas en la misma línea verticalmente.
+    #Luego, se comprueba si las fichas en los 3-1 espacios consecutivos en cada columna pertenecen a el mismo jugador
+    #Si lo son, el movimiento es ganador, y de lo contrario, ya saben.
+    for col in range(COLS):
+        for row in range(ROWS - 3):
+            if Tablero[row][col] == Tablero[row+1][col] == Tablero[row+2][col] == Tablero[row+3][col] == player:
+                update_stats(page, winner='player1' if player == 1 else 'player2')  # Actualiza las estadísticas cuando hay un ganador
+                return True  # DA True si el jugador ganó
+    
+    # V. Diagonales (/)
+    #El código revisa las filas del tablero hasta la cuarta fila, para asegurarse de que haya suficiente espacio para las fichas en una diagonal.
+    #Se hace exactamente el mismo proceso anterior pero para las columnas.
+    #Se comprueba si las fichas en diagonal pertenecen al mismo jugador.
+    #Se comprueban de mirar (empezando desde el centro) abajo y a la izuierda (row+1, col+1), dos casillas abajo y dos a la izuierda (row+2, col+2), y así.
+    #Si se encuentran 3-1 fichas de un jugador en la misma diagonal, se declara el ganador y etc etc.
+    for row in range(ROWS - 3):
+        for col in range(COLS - 3):
+            if Tablero[row][col] == Tablero[row+1][col+1] == Tablero[row+2][col+2] == Tablero[row+3][col+3] == player:
+                update_stats(page, winner='player1' if player == 1 else 'player2')  # Actualiza las estadísticas cuando hay un ganador
+                return True  # Da True si el jugador ganó
+    
+    #Hace EXACTAMENTE lo mismo que lo que mencioné anteriormente, la diferencia es que en vez de col+1 es col-1.
+    #Esto se hace para que en vez de ir hacia abajo y la izquierda, va hacia abajo y a la DERECHA.
+    for row in range(ROWS - 3):
+        for col in range(3, COLS):
+            if Tablero[row][col] == Tablero[row+1][col-1] == Tablero[row+2][col-2] == Tablero[row+3][col-3] == player:
+                update_stats(page, winner='player1' if player == 1 else 'player2')  
+                return True  # Da True si el jugador ganó
+    
+    return False  # Si no hay ganador, Da false y el juego sigue
+
+# Función para comprobar si el tablero está lleno (Para detectar empates)
+#Yo de hecho ni sabía ue era posible hacer un empate en conecta 4 pero bueno
+def is_board_full(board):
+    # Revisa cada casilla del tablero, y si todas las casillas están llenas (no tienen 0), se considera que el tablero está lleno
+    return all(board[row][col] != 0 for row in range(ROWS) for col in range(COLS))
+#función principal
+def main(page: ft.Page):
+    page.title = "Connecta 4 mi hermano"  # título
+    Tablero = Hacer_Tablero()  # inicia el tablero vacío
+    current_player = [1]  # El jugador 1 comienza siempre
+
+    # Carga las estadísticas desde el archivo al inicio y las almacena en el objeto de la página
+    page.stats = load_stats()
+
+    grid = []  # Se declara el tablero visual (grid) y la variable de turno en el ámbito externo
+    turno = None
+
+    # Función para reiniciar el juego
+    def reiniciar(e=None):
+        nonlocal Tablero, current_player, grid, turno
+        Tablero = Hacer_Tablero()  # Reinicia el tablero
+        current_player[0] = 1  # Reinicia el jugador a 1
+        # Reinicia el color de las casillas 
+        for row in grid: #Por cada row en el grid
+            for cell in row: #Y por cada "célula" (casilla) en row...
+                cell.bgcolor = "white"  # Establece el color de fondo de las casillas como blanco
+                cell.update()  # Actualiza las casillas
+        turno.value = "Le toca al player 1 B)"  # Actualiza el texto que muestra el turno
+        turno.update()  # Actualiza los turnos
+        if page.dialog:  # Si hay un diálogo abierto
+            page.dialog.open = False  # Cierra el diálogo
+            #Esto es porue esta función sale en un AlertDialog, entonces hay ue cerrarlo de esta forma
+            #para ue el juego no explote
+            page.update()  # Actualiza la interfaz (todo)
+
+    # Esto es para manejar los clicks
+    def handle_click(e):
+        nonlocal grid, turno
+        col = int(e.control.data)  # se obtiene la ubicación del click
+        row = soltar_ficha(Tablero, col, current_player[0])  # se INTENTA colocar la ficha en el tablero
+        if row is None:  # Si la columna está llena...
+            page.snack_bar = ft.SnackBar(ft.Text("La columna está llena, elige otra."))  # Muestra un mensaje de error (en forma de SnackBar)
+            page.snack_bar.open = True  # Abre el mensaje
+            page.update()  # Actualiza todo
+            return
+
+        # Cambia el color de la casilla según el jugador actual, rojo para jugador 1, amarillo para jugador 2
+        grid[row][col].bgcolor = "red" if current_player[0] == 1 else "yellow"
+        grid[row][col].update()  # Actualiza todo
+
+        # verificar si ganamo B)
+        #Si ganaste...
+        if ganaste(Tablero, current_player[0], page):  # va a page.stats dentro de ganaste
+            winner = 'player1' if current_player[0] == 1 else 'player2'  # Establece quién ganó
+            update_stats(page, winner)  # Actualiza las estadísticas cuando un jugador gana
+            page.dialog = ft.AlertDialog(  # Muestra un cuadro de diálogo con el mensaje de victoria porue se lo merecen B)
+                title=ft.Text(f"Ay, ganó el jugador {current_player[0]}, te apetece intentarlo de nuevo B)? (Huye mientras puedes)"),
+                actions=[
+                    ft.TextButton("Va, le entro", on_click=reiniciar),  # Botón para reiniciar el juego
+                    ft.TextButton("POLICÍAAAAA!!!! (Salir)", on_click=lambda e: page.window_close()),  # Botón para cerrar el juego
+                ],
+            )
+            page.dialog.open = True  # Abre el AlertDialogue
+            page.update()  # Actualiza todo
+            return
+
+        # Si el tablero está lleno y no hay ganador, es empate
+        if is_board_full(Tablero): #Si el tablero está lleno...
+            update_stats(page)  # Actualiza las estadísticas para el empate
+            page.dialog = ft.AlertDialog(  # Muestra un AlertDialogue con el mensaje de empate
+                title=ft.Text("CÓMO??? CÓMO DIABLOS EMPATARON???? Bueno, les apetece volver a intentar?"),
+                actions=[
+                    ft.TextButton("Va, vamos a intentarlo de nuevo :D", on_click=reiniciar),  # Botón para reiniciar el juego
+                    ft.TextButton("No, te voy a meter una denuncia de abuso de derechos animales", on_click=lambda e: page.window_close()),  # Botón para cerrar el juego
+                ],
+            )
+            page.dialog.open = True  # Abre el AlertDialogue
+            page.update()  # Actualiza la interfaz
+            return
+
+        current_player[0] = 3 - current_player[0]  # Cambia al siguiente jugador durante el juego
+        #Se resta 3 por el número de jugador. 
+        #Si el jugador 2 jugó, 2-3=1, el jugador 1 jugó, 1-3=2.
+        turno.value = f"Le toca al player {current_player[0]}"  # Actualiza el mensaje del turno
+        turno.update()  # Actualiza los turnos
+
+    #iniciar el juego
+    def iniciar_juego(e):
+        page.controls.clear()  # Limpia los controles de la página
+        crear_juego()  # crea el tablero en la interfaz
+        page.update()  # Actualiza la interfaz
+
+    # Función para crear el tablero en la interfaz 
+    def crear_juego():
+        nonlocal grid, turno
+        # Crea una cuadrícula de botones para representar el tablero
+        # Cada botón es una "casilla"
+        grid = [
+            [
+                ft.Container(  # el contenedor de cada casilla en el "grid" de columnas*filas
+                    width=50,  # ancho
+                    height=50,  # alto
+                    bgcolor="white",  # color inicial
+                    border=ft.border.all(1, "black"),  # borde negro (elegante) para cada casilla
+                    data=col,  # Almacena las columnas en el 'data' de la casilla
+                    on_click=handle_click,  # En click, se ejecuta la función para manejar los clicks
+                )
+                for col in range(COLS)
+            ]
+            for row in range(ROWS)
+        ]
+        turno = ft.Text("le toca al jugador 1 mueve MUEVE RÁPIDO!!!!", size=20)  # Muestra el mensaje de turno
+        page.add(turno)  # Agrega el mensaje del turno a la página, arriba del tablero
+        page.add(ft.Column([ft.Row(row) for row in grid]))  # Agrega la casilla al layout de la página
+
+    # acá para mostrar las estadísticas
+    def mostrar_estadisticas(e):
+        stats = load_stats()  # esto para cargar las estadísticas desde el archivo .csv
+        # pone las estadísticas en una cadena de texto
+        stats_text = "\n".join(
+            [f"{player}: ganó {data['wins']}, perdió {data['losses']}, empató {data['draws']}" 
+             for player, data in stats.items()]
+        )
+        page.dialog = ft.AlertDialog(  # Crea un AlertDialogue con las estadísticas
+            title=ft.Text("Estadísticas"),
+            content=ft.Text(stats_text),
+        )
+        page.dialog.open = True  # Abre el AlertDialogue
+        page.update()  # Actualiza la interfaz gráfica
+
+    # Pantalla de inicio 
+    titulo = ft.Text("Connecta 4!!!!!", size=40, weight="bold", color="blue")  # Título del juego
+    descripcion = ft.Text("Bueeeenas noches!!! En este video, quien gane en este juego de conecta cuatro gana un millón de dólares!!! (El perdedor verá su casa quemarse en un incendio)", size=20)  # bienvenida b)
+    boton_start = ft.ElevatedButton("Empezar!!!!", on_click=iniciar_juego)  # Botón para iniciar el juego
+    boton_moral = ft.ElevatedButton("Estadísticas", on_click=mostrar_estadisticas)  # Botón para ver las estadísticas
+
+    pantalla_inicio = ft.Column(  # Crea una columna para organizar los botones y el título en la pantalla de inicio
+        [
+            ft.Container(content=titulo, alignment=ft.alignment.center, padding=20),  # Contenedor del título
+            ft.Container(content=descripcion, alignment=ft.alignment.center, padding=10),  # Contenedor de la "bienvenida"
+            ft.Container(content=boton_start, alignment=ft.alignment.center, padding=10),  # Contenedor para el botón de inicio
+            ft.Container(content=boton_moral, alignment=ft.alignment.center, padding=10)  # Contenedor para el botón de estadísticas
+        ],
+        alignment=ft.MainAxisAlignment.CENTER,  # Centra todo en la pantalla pa que no se vea feo
+    )
+
+    page.add(pantalla_inicio)  # Agrega el hecho por los objetos anteriores al layout de la pantalla de inicio 
+
+# Ejecuta todo
+ft.app(target=main)  
+
+#DUDE, YOU DON'T NEED CONSENT TO MATE SOMEONE!!! I mean, in real life, consent is needed, of course. In chess? Go mate your opponent, consent doesn't matter in chess!!!!
+#-Levy Rozman, Chess INTERNATIONAL MASTER.
+
+
+
+
+
+
+
