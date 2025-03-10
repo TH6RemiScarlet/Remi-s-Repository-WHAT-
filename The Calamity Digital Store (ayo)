@@ -1,0 +1,117 @@
+import flet as ft
+import csv
+import os
+
+def main(page: ft.Page):
+    page.title = "Hace tiempo no andamo en el phyton flet B)"
+    page.scroll = ft.ScrollMode.ALWAYS
+    page.theme_mode = ft.ThemeMode.DARK
+
+ 
+    titulillo = ft.Text("THE TERRARIA CALAMITY DIGITAL STORE!!!!!!")
+    t1 = ft.Text("(very legit yes)")
+    t2 = ft.Text("Hello my boios and welcome to the Terraria Calamity digital store :)")
+    t3 = ft.Text("really u can actually buy ANYTHING u want here so uh")
+    t4 = ft.Text("Don't bother much about buying Calamity Certified Uranium For Innocent Purposes® ")
+    t5 = ft.Text("Current offers: Yharon plushie 50% off, Supreme Calamitas (maid costume) is currently 95% off (Supreme Calamitas plushie not included)")
+    t6 = ft.Text("oh yeah we're also selling Cirno fumos (9% off)") #You have an ungodly genious brain if u get this one
+
+ 
+    tfield = ft.TextField(label="type here whatever u wanna buy and we'll put it in the kart") 
+    response_text = ft.Text("") 
+    addstuff = ft.ElevatedButton(text="click here to add ur current stuff to the kart", on_click=lambda e: add_to_cart(tfield.value, response_text))
+    showstuff = ft.ElevatedButton(text="click here to look what ur gonna lose ur money to", on_click=lambda e: show_cart(response_text))
+    deletestuff = ft.ElevatedButton(text="click here if u wanna delete ur stuff (You will regret this)", on_click=lambda e: delete_item(tfield.value, response_text))
+    nukestuff = ft.ElevatedButton(text="click here to nuke all ur items and escape while u still can", on_click=lambda e: nuke_cart(response_text))
+
+ 
+    page_n_stuff = ft.Column(
+        [
+            ft.Container(content=titulillo, alignment=ft.alignment.center, padding=0),
+            ft.Container(content=t1, alignment=ft.alignment.center, padding=20),
+            ft.Container(content=t2, alignment=ft.alignment.center, padding=0),
+            ft.Container(content=t3, alignment=ft.alignment.center, padding=0),
+            ft.Container(content=t4, alignment=ft.alignment.center, padding=0),
+            ft.Container(content=t5, alignment=ft.alignment.center, padding=0),
+            ft.Container(content=t6, alignment=ft.alignment.center, padding=0),
+            ft.Container(content=tfield, alignment=ft.alignment.center, padding=20),
+            ft.Container(content=addstuff, alignment=ft.alignment.center, padding=0),
+            ft.Container(content=showstuff, alignment=ft.alignment.center, padding=0),
+            ft.Container(content=deletestuff, alignment=ft.alignment.center, padding=0),
+            ft.Container(content=nukestuff, alignment=ft.alignment.center, padding=0),
+            ft.Container(content=response_text, alignment=ft.alignment.center, padding=20),  
+        ]
+    )
+    page.add(page_n_stuff)
+
+def add_to_cart(item, response_text):
+    if item:
+        with open('ShoppingList.csv', 'a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([item])
+        response_text.value = f"aight, '{item}' was added to ur kart B) (give us everything you have)"
+    else:
+        response_text.value = "I uh, u need to enter an ITEM dude, air ain't one lol"
+    response_text.update()
+
+def show_cart(response_text):
+    if os.path.exists('ShoppingList.csv'):
+        with open('ShoppingList.csv', 'r') as file:
+            items = file.readlines()
+            if items:
+                response_text.value = "rn u have dis items at ur kart:\n" + "".join(item.strip() + "\n" for item in items)
+            else:
+                response_text.value = "bruh ur shopping list is empty, the hell do you wanna empty???"
+    else:
+        response_text.value = "shoppin list? What's that? Is that a class from the famous videogame Terraria Calamity Infernum?"
+    response_text.update()
+
+def delete_item(item, response_text):
+    if not os.path.exists('ShoppingList.csv'):
+        response_text.value = "shoppin list? What's that? Is that a class from the famous videogame Terraria Calamity Infernum?"
+        response_text.update()
+        return
+
+    with open('ShoppingList.csv', 'r') as file:
+        items = file.readlines()
+
+    if item + '\n' in items:
+        items.remove(item + '\n')
+        with open('ShoppingList.csv', 'w', newline='') as file:
+            file.writelines(items)
+        response_text.value = f"fINe, we deleted '{item}' from ur kart :()"
+    else:
+        response_text.value = f"this '{item}' ain't not in the kart lol."
+    response_text.update()
+
+def nuke_cart(response_text):
+    if os.path.exists('ShoppingList.csv'):
+        os.remove('ShoppingList.csv')
+        response_text.value = "ow man :("
+    else:
+        response_text.value = "Dude, you have no shopping list to nuke you absolute-"
+    response_text.update()
+
+ft.app(target=main)
+
+#btw, if u wonder why I sometimes fill my project with green text and sometimes I don't it's cuz I just do it as I need to.
+#For example, my second period last project (the peakest thing I have ever done to date) was absolutely filled with way too much green text
+#1: It's literally the second period final project, and 2: there was a lot of technical stuff and process
+#I also placed a lot cuz I thought I was gonna stand and explain my code to everyone lol (that's literally the purpose of the green text in my project)
+
+#I'd also like to ask for you to not subtract me points for the second function: I know it's supposed to be like; You select a specific
+#Item from the list to delete, but really by the time I was doing the code I was running out of time, Didn't really know how to do that
+#And didn't want to resort to directly cheating, so Instead I went through the route of just deleting your previous item.
+
+
+#And I must confess
+#I told you all of that
+#To ask
+
+
+#Do you by any chance know what happened in the final project delivery day????? I'm still bugged out by the fact that my thing didn't work
+#on your pc
+
+
+#Update: for all of yall readin in github
+#go play touhou 6 you should totally try it fr fr fr fr fr fr fr fr fr fr
