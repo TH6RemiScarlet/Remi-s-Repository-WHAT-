@@ -1,2 +1,9 @@
 # Remi-s-Repository-WHAT-
-Connect 4 thingamajig
+What up
+Today I bring you 
+
+# Connect 4
+# (Wow)
+
+So uh idk launch it if u want or not I guess
+Imma go play Touhou 6 (which you should totally try too!!!)
